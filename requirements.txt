@@ -1,0 +1,9 @@
+flask
+flask-sqlalchemy
+sqlalchemy-serializer
+faker
+flask-migrate
+flask-restful
+importlib-metadata
+importlib-resources
+pytest

@@ -18,6 +18,35 @@ db.init_app(app)
 
 api = Api(app)
 
+
+# handling page not found errors
+# @app.errorhandler(404)
+# def page_not_found(error):
+#     return 'This page does not exist', 404
+
+
+# handling unauthorized errors
+# @app.errorhandler(401)
+# def page_not_found(error):
+#     return 'Not authorized', 401
+
+# setting up login restriction to allow only logged in users to access endpoints (member_article. member_index)
+@app.before_request
+def check_if_logged_in():
+
+    # setting open routes users can visit if not logged in
+    open_access_list = [
+        'clear',
+        'article_list',
+        'show_article',
+        'login',
+        'logout',
+        'check_session'
+    ]
+
+    if (request.endpoint) not in open_access_list and (not session.get('user_id')):
+        return {'error': '401 Unauthorized'}, 401
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -47,7 +76,12 @@ class ShowArticle(Resource):
             if session['page_views'] <= 3:
                 return article_json, 200
 
-            return {'message': 'Maximum pageview limit reached'}, 401
+            return make_response(
+                jsonify({
+                    'message': 'Maximum pageview limit reached'
+                }),
+                401
+            )
 
         return article_json, 200
 
@@ -87,12 +121,16 @@ class CheckSession(Resource):
 class MemberOnlyIndex(Resource):
     
     def get(self):
-        pass
+    
+        articles = Article.query.filter(Article.is_member_only == True).all()
+        return [article.to_dict() for article in articles], 200
 
 class MemberOnlyArticle(Resource):
     
     def get(self, id):
-        pass
+
+        article = Article.query.filter(Article.id == id).first()
+        return article.to_dict(), 200
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(IndexArticle, '/articles', endpoint='article_list')
